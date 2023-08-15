@@ -1,0 +1,280 @@
+<html>
+<head>
+<title>TarifFragment.kt</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+TarifFragment.kt</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.isikkaya.yemektariflerisqlite</span>
+
+<span class="s1">import android.app.Activity</span>
+<span class="s1">import android.content.Context</span>
+<span class="s1">import android.content.Intent</span>
+<span class="s1">import android.content.pm.PackageManager</span>
+<span class="s1">import android.graphics.Bitmap</span>
+<span class="s1">import android.graphics.BitmapFactory</span>
+<span class="s1">import android.graphics.ImageDecoder</span>
+<span class="s1">import android.net.Uri</span>
+<span class="s1">import android.os.Build</span>
+<span class="s1">import android.os.Bundle</span>
+<span class="s1">import android.provider.MediaStore</span>
+<span class="s1">import androidx.fragment.app.Fragment</span>
+<span class="s1">import android.view.LayoutInflater</span>
+<span class="s1">import android.view.View</span>
+<span class="s1">import android.view.ViewGroup</span>
+<span class="s1">import androidx.core.content.ContextCompat</span>
+<span class="s1">import androidx.navigation.Navigation</span>
+<span class="s1">import kotlinx.android.synthetic.main.fragment_tarif.*</span>
+<span class="s1">import java.io.ByteArrayOutputStream</span>
+
+
+<span class="s0">class </span><span class="s1">TarifFragment : Fragment() {</span>
+
+    <span class="s0">var </span><span class="s1">secilenGorsel : Uri? = </span><span class="s0">null</span>
+    <span class="s0">var </span><span class="s1">secilenBitmap : Bitmap? = </span><span class="s0">null</span>
+
+    <span class="s1">override </span><span class="s0">fun </span><span class="s1">onCreate(savedInstanceState: Bundle?) {</span>
+        <span class="s0">super</span><span class="s1">.onCreate(savedInstanceState)</span>
+
+    <span class="s1">}</span>
+
+    <span class="s1">override </span><span class="s0">fun </span><span class="s1">onCreateView(</span>
+        <span class="s1">inflater: LayoutInflater</span><span class="s0">, </span><span class="s1">container: ViewGroup?</span><span class="s0">,</span>
+        <span class="s1">savedInstanceState: Bundle?</span>
+    <span class="s1">): View? {</span>
+        <span class="s2">// Inflate the layout for this fragment</span>
+        <span class="s0">return </span><span class="s1">inflater.inflate(R.layout.fragment_tarif</span><span class="s0">, </span><span class="s1">container</span><span class="s0">, false</span><span class="s1">)</span>
+    <span class="s1">}</span>
+
+    <span class="s1">override </span><span class="s0">fun </span><span class="s1">onViewCreated(view: View</span><span class="s0">, </span><span class="s1">savedInstanceState: Bundle?) {</span>
+        <span class="s0">super</span><span class="s1">.onViewCreated(view</span><span class="s0">, </span><span class="s1">savedInstanceState)</span>
+        <span class="s1">button.setOnClickListener {</span>
+            <span class="s1">kaydet(it)</span>
+        <span class="s1">}</span>
+        <span class="s1">imageView.setOnClickListener{</span>
+            <span class="s1">gorselSec(it)</span>
+        <span class="s1">}</span>
+
+        <span class="s1">arguments?.let {</span>
+            <span class="s0">var </span><span class="s1">gelenBilgi = TarifFragmentArgs.fromBundle(it).bilgi</span>
+            <span class="s0">if</span><span class="s1">(gelenBilgi.equals(</span><span class="s3">&quot;menudengeldim&quot;</span><span class="s1">)){</span>
+                <span class="s2">//yeni bir yemek eklemeye geldi</span>
+                <span class="s1">yemekIsmiText.setText(</span><span class="s3">&quot;&quot;</span><span class="s1">)</span>
+                <span class="s1">yemekMalzemeText.setText(</span><span class="s3">&quot;&quot;</span><span class="s1">)</span>
+                <span class="s1">button.visibility = View.VISIBLE</span>
+                <span class="s1">context?.let {</span>
+
+                    <span class="s0">val </span><span class="s1">gorselSecmeArkaPlani =</span>
+                        <span class="s1">BitmapFactory.decodeResource(it.resources</span><span class="s0">, </span><span class="s1">R.drawable.gorselsecimi)</span>
+                    <span class="s1">imageView.setImageBitmap(gorselSecmeArkaPlani)</span>
+
+                <span class="s1">}</span>
+
+            <span class="s1">}</span><span class="s0">else</span><span class="s1">{</span>
+
+                <span class="s2">//daaha önce olusturulan yemegi görmeye geldi</span>
+                <span class="s1">button.visibility = View.INVISIBLE</span>
+
+                <span class="s0">val </span><span class="s1">secilenId = TarifFragmentArgs.fromBundle(it).id</span>
+
+                <span class="s1">context?.let {</span>
+                    <span class="s0">try </span><span class="s1">{</span>
+                        <span class="s0">val </span><span class="s1">db = it.openOrCreateDatabase(</span><span class="s3">&quot;Yemekler&quot;</span><span class="s0">,</span><span class="s1">Context.MODE_PRIVATE</span><span class="s0">,null</span><span class="s1">)</span>
+
+                        <span class="s0">val </span><span class="s1">cursor = db.rawQuery(</span><span class="s3">&quot;SELECT * FROM yemekler WHERE id = ?&quot;</span><span class="s0">, </span><span class="s1">arrayOf(secilenId.toString()))</span>
+
+                        <span class="s0">val </span><span class="s1">yemekIsmiIndex = cursor.getColumnIndex(</span><span class="s3">&quot;yemekismi&quot;</span><span class="s1">)</span>
+                        <span class="s0">val </span><span class="s1">yemekMalzemeIndex = cursor.getColumnIndex(</span><span class="s3">&quot;yemekmalzemesi&quot;</span><span class="s1">)</span>
+                        <span class="s0">val </span><span class="s1">yemekGorseli= cursor.getColumnIndex(</span><span class="s3">&quot;gorsel&quot;</span><span class="s1">)</span>
+
+                        <span class="s0">while</span><span class="s1">(cursor.moveToNext()){</span>
+                            <span class="s1">yemekIsmiText.setText(cursor.getString(yemekIsmiIndex))</span>
+                            <span class="s1">yemekMalzemeText.setText(cursor.getString(yemekMalzemeIndex))</span>
+
+                            <span class="s0">val </span><span class="s1">byteDizisi = cursor.getBlob(yemekGorseli)</span>
+                            <span class="s0">val </span><span class="s1">bitmap = BitmapFactory.decodeByteArray(byteDizisi</span><span class="s0">,</span><span class="s4">0</span><span class="s0">,</span><span class="s1">byteDizisi.size)</span>
+                            <span class="s1">imageView.setImageBitmap(bitmap)</span>
+                        <span class="s1">}</span>
+                        <span class="s1">cursor.close()</span>
+
+
+                    <span class="s1">}catch (e: Exception){</span>
+                        <span class="s1">e.printStackTrace()</span>
+
+
+                    <span class="s1">}</span>
+
+                <span class="s1">}</span>
+
+
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+
+    <span class="s0">fun </span><span class="s1">kaydet(view: View){</span>
+<span class="s2">//Sqlite 'a kaydetme</span>
+        <span class="s0">val </span><span class="s1">yemekIsmi = yemekIsmiText.text.toString()</span>
+        <span class="s0">val </span><span class="s1">yemekMalzemeleri = yemekMalzemeText.text.toString()</span>
+
+        <span class="s0">if </span><span class="s1">(secilenBitmap != </span><span class="s0">null</span><span class="s1">){</span>
+            <span class="s0">val </span><span class="s1">kucukBitmap = kucukBitmapOLustur(secilenBitmap!!</span><span class="s0">,</span><span class="s4">200</span><span class="s1">)</span>
+
+            <span class="s0">val </span><span class="s1">outputStream = ByteArrayOutputStream()</span>
+            <span class="s1">kucukBitmap.compress(Bitmap.CompressFormat.PNG</span><span class="s0">,</span><span class="s4">50</span><span class="s0">,</span><span class="s1">outputStream)</span>
+            <span class="s0">val </span><span class="s1">byteDizisi = outputStream.toByteArray()</span>
+
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s1">context?.let {</span>
+                    <span class="s0">val </span><span class="s1">database = it.openOrCreateDatabase(</span><span class="s3">&quot;Yemekler&quot;</span><span class="s0">,</span><span class="s1">Context.MODE_PRIVATE</span><span class="s0">,null</span><span class="s1">)</span>
+
+                    <span class="s1">database.execSQL(</span><span class="s3">&quot;CREATE TABLE IF NOT EXISTS yemekler (id INTEGER PRIMARY KEY, yemekismi VARCHAR, yemekmalzemesi VARCHAR, gorsel BLOB)&quot;</span><span class="s1">)</span>
+
+                    <span class="s0">val </span><span class="s1">sqlString = </span><span class="s3">&quot;INSERT INTO yemekler (yemekismi, yemekmalzemesi, gorsel) VALUES(?,?,?)&quot;</span>
+                    <span class="s0">val </span><span class="s1">statement = database.compileStatement(sqlString)</span>
+                    <span class="s1">statement.bindString(</span><span class="s4">1</span><span class="s0">,</span><span class="s1">yemekIsmi)</span>
+                    <span class="s1">statement.bindString(</span><span class="s4">2</span><span class="s0">,</span><span class="s1">yemekMalzemeleri)</span>
+                    <span class="s1">statement.bindBlob(</span><span class="s4">3</span><span class="s0">,</span><span class="s1">byteDizisi)</span>
+                    <span class="s1">statement.execute()</span>
+
+                <span class="s1">}</span>
+            <span class="s1">}catch (e: Exception){</span>
+                <span class="s1">e.printStackTrace()</span>
+
+            <span class="s1">}</span>
+            <span class="s0">val </span><span class="s1">action = TarifFragmentDirections.actionTarifFragmentToListeFragment()</span>
+            <span class="s1">Navigation.findNavController(view).navigate(action)</span>
+
+
+
+        <span class="s1">}</span>
+
+
+
+    <span class="s1">}</span>
+
+    <span class="s0">fun </span><span class="s1">gorselSec(view: View){</span>
+
+        <span class="s1">activity?.let {</span>
+
+            <span class="s0">if </span><span class="s1">(ContextCompat.checkSelfPermission(it.applicationContext</span><span class="s0">,</span><span class="s1">android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){</span>
+            <span class="s2">//izin verilmedi, izin istememiz gerekiyor</span>
+
+                <span class="s1">requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)</span><span class="s0">,</span><span class="s4">1</span><span class="s1">)</span>
+
+            <span class="s1">} </span><span class="s0">else</span><span class="s1">{</span>
+            <span class="s2">//izin zaten verilmiş, tekrar istemeden galeriye git</span>
+                <span class="s0">val </span><span class="s1">galeriIntent = Intent(Intent.ACTION_PICK</span><span class="s0">,</span><span class="s1">MediaStore.Images.Media.EXTERNAL_CONTENT_URI)</span>
+
+                <span class="s1">startActivityForResult(galeriIntent</span><span class="s0">,</span><span class="s4">2</span><span class="s1">)</span>
+
+            <span class="s1">}</span>
+
+
+        <span class="s1">}</span>
+
+
+    <span class="s1">}</span>
+
+    <span class="s1">override </span><span class="s0">fun </span><span class="s1">onRequestPermissionsResult(</span>
+        <span class="s1">requestCode: Int</span><span class="s0">,</span>
+        <span class="s1">permissions: Array&lt;out String&gt;</span><span class="s0">,</span>
+        <span class="s1">grantResults: IntArray</span>
+    <span class="s1">) {</span>
+
+        <span class="s0">if </span><span class="s1">(requestCode == </span><span class="s4">1</span><span class="s1">){</span>
+
+            <span class="s0">if </span><span class="s1">(grantResults.size &gt; </span><span class="s4">0 </span><span class="s1">&amp;&amp; grantResults[</span><span class="s4">0</span><span class="s1">] == PackageManager.PERMISSION_GRANTED){</span>
+                <span class="s2">//izni aldık</span>
+            <span class="s0">val </span><span class="s1">galeriIntent = Intent(Intent.ACTION_PICK</span><span class="s0">,</span><span class="s1">MediaStore.Images.Media.EXTERNAL_CONTENT_URI)</span>
+            <span class="s1">startActivityForResult(galeriIntent</span><span class="s0">,</span><span class="s4">2</span><span class="s1">)</span>
+
+            <span class="s1">}</span>
+
+        <span class="s1">}</span>
+
+
+        <span class="s0">super</span><span class="s1">.onRequestPermissionsResult(requestCode</span><span class="s0">, </span><span class="s1">permissions</span><span class="s0">, </span><span class="s1">grantResults)</span>
+    <span class="s1">}</span>
+
+    <span class="s1">override </span><span class="s0">fun </span><span class="s1">onActivityResult(requestCode: Int</span><span class="s0">, </span><span class="s1">resultCode: Int</span><span class="s0">, </span><span class="s1">data: Intent?) {</span>
+
+        <span class="s0">if </span><span class="s1">(requestCode == </span><span class="s4">2 </span><span class="s1">&amp;&amp; resultCode == Activity.RESULT_OK &amp;&amp; data != </span><span class="s0">null</span><span class="s1">){</span>
+            <span class="s1">secilenGorsel = data.data</span>
+
+            <span class="s0">try</span><span class="s1">{</span>
+                <span class="s1">context?.let {</span>
+                    <span class="s0">if </span><span class="s1">(secilenGorsel != </span><span class="s0">null</span><span class="s1">){</span>
+
+                        <span class="s0">if</span><span class="s1">(Build.VERSION.SDK_INT &gt;= </span><span class="s4">28</span><span class="s1">){</span>
+                            <span class="s0">val </span><span class="s1">source = ImageDecoder.createSource(it.contentResolver</span><span class="s0">,</span><span class="s1">secilenGorsel!!)</span>
+                            <span class="s1">secilenBitmap = ImageDecoder.decodeBitmap(source)</span>
+                            <span class="s1">imageView.setImageBitmap(secilenBitmap)</span>
+
+                        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                            <span class="s1">secilenBitmap = MediaStore.Images.Media.getBitmap(it.contentResolver</span><span class="s0">,</span><span class="s1">secilenGorsel)</span>
+                            <span class="s1">imageView.setImageBitmap(secilenBitmap)</span>
+
+                        <span class="s1">}</span>
+
+
+                    <span class="s1">}</span>
+
+
+
+
+                <span class="s1">}</span>
+
+
+
+
+            <span class="s1">}catch (e: Exception){</span>
+                <span class="s1">e.printStackTrace()</span>
+            <span class="s1">}</span>
+
+        <span class="s1">}</span>
+
+
+        <span class="s0">super</span><span class="s1">.onActivityResult(requestCode</span><span class="s0">, </span><span class="s1">resultCode</span><span class="s0">, </span><span class="s1">data)</span>
+    <span class="s1">}</span>
+
+
+    <span class="s0">fun </span><span class="s1">kucukBitmapOLustur(kullanicininSectigiBitmap: Bitmap</span><span class="s0">,</span><span class="s1">maximumBoyut: Int) : Bitmap{</span>
+
+        <span class="s0">var </span><span class="s1">width = kullanicininSectigiBitmap.width</span>
+        <span class="s0">var </span><span class="s1">height = kullanicininSectigiBitmap.height</span>
+
+        <span class="s0">val </span><span class="s1">bitmapOrani : Double = width.toDouble() / height.toDouble()</span>
+
+        <span class="s0">if </span><span class="s1">(bitmapOrani &gt; </span><span class="s4">1</span><span class="s1">){</span>
+            <span class="s2">//gorselimiz yatay</span>
+            <span class="s1">width = maximumBoyut</span>
+            <span class="s0">val </span><span class="s1">kisaltilmisHeight = width / bitmapOrani</span>
+            <span class="s1">height = kisaltilmisHeight.toInt()</span>
+        <span class="s1">}</span><span class="s0">else</span><span class="s1">{</span>
+            <span class="s2">//gorselimiz dikey</span>
+
+            <span class="s1">height = maximumBoyut</span>
+            <span class="s0">val </span><span class="s1">kisaltilmisWidth = height * bitmapOrani</span>
+            <span class="s1">width = kisaltilmisWidth.toInt()</span>
+        <span class="s1">}</span>
+
+        <span class="s0">return </span><span class="s1">Bitmap.createScaledBitmap(kullanicininSectigiBitmap</span><span class="s0">,</span><span class="s1">width</span><span class="s0">,</span><span class="s1">height</span><span class="s0">,true</span><span class="s1">)</span>
+    <span class="s1">}</span>
+
+
+
+<span class="s1">}</span></pre>
+</body>
+</html>
